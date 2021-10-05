@@ -5,9 +5,9 @@ from sklearn import linear_model
 from sklearn.svm import SVC
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import train_test_split
-from sklearn.neural_network import MLPClassifier
+from sklearn.neural_network import MLPClassifier,MLPRegressor
 from sklearn import preprocessing
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsClassifier,KNeighborsRegressor
 from sklearn.metrics import classification_report,confusion_matrix,mean_squared_error,r2_score
 
 # TODO:
@@ -109,23 +109,53 @@ def runClassifier(x_train,x_test,y_train,y_test,c,reg=1.0,hl=3,k=5,k_fold=10,deb
         print(cl.score(x_test, y_test))
         print("\n")
     else:
-        print("ERR: Bad Model ID")
+        print("ERR: Bad Classifier ID")
 
-def runRegressor():
-    m = 0
-    if m == 0:
-        # Train Linear Regression Classifier
-        cl = linear_model.LinearRegression()
-        cl.fit(x_train, y_train)
+def runRegressor(x_train,x_test,y_train,y_test,r,hl=3):
+    if r == 0:
+        # Train Linear Regression
+        rg = linear_model.LinearRegression()
+        rg.fit(x_train, y_train)
 
         # Make predictions
-        y_predict = cl.predict(x_test)
+        y_predict = rg.predict(x_test)
         
         print("Linear Regression Metrics:")
         print('MSE: %.3f' % mean_squared_error(y_test, y_predict))
         print('CoD: %.3f' % r2_score(y_test, y_predict))
         print("\n")
+    elif r == 1:
+        # Modify MLP structure
+        layer_size=[]
+        for i in range(0,hl):
+            layer_size.append(11)
+        layer_size = tuple(layer_size)
+        
+        # Train MLP Regressor
+        rg = MLPRegressor(hidden_layer_sizes=layer_size, max_iter=1000)
+        rg.fit(x_train,y_train)
 
+        # Make Predictions
+        predictions = rg.predict(x_test)
+        for each in predictions[0:10]:
+            print(each)
+        
+        for each in y_test[0:10]:
+            print(each)
+        
+        # Get Metrics
+        print("Multi-Layered Perceptron Regressor ("+ str(hl) +" hidden layers):")
+        print("Classification Report:\n")
+        print(classification_report(y_test,predictions))
+        print()
+        print("Score:")
+        print(cl.score(x_test, y_test))
+        print("\n")
+    elif r == 2:
+        print("implement pls")
+    else:
+        print("ERR: Bad Regressor ID")
+        
 
 def main():
     # Load data
@@ -139,6 +169,8 @@ def main():
 
     # Split train/test
     x_train, x_test, y_train, y_test = train_test_split(x_single, y_single)
+
+    runRegressor(x_train, x_test, y_train, y_test, 1)
 
     # Single LR
     runClassifier(x_train, x_test, y_train, y_test, 0)
