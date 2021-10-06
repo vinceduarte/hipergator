@@ -1,23 +1,22 @@
 import numpy as np
+from numpy import mean
+from numpy import absolute
+import matplotlib.pyplot as plt
 import sklearn
 from sklearn.preprocessing import StandardScaler
 from sklearn import linear_model
 from sklearn.svm import SVC
 from sklearn.pipeline import make_pipeline
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.neural_network import MLPClassifier,MLPRegressor
 from sklearn import preprocessing
 from sklearn.neighbors import KNeighborsClassifier,KNeighborsRegressor
-from sklearn.metrics import classification_report,confusion_matrix,mean_squared_error,r2_score
+from sklearn.metrics import classification_report,confusion_matrix,accuracy_score,mean_squared_error,r2_score
 
 # TODO:
-# - Implement K-fold validation
-# - Fix Linear SVM (SVC)
-# - Implement Regressors & their metrics
 # - Perform tests for Multi & Final datasets
-# - Implement Command-line game
 # - Implement Extra Credit?
-# - Finish project tbh
+# - Finish video
 
 #
 # runClassifier:
@@ -29,7 +28,7 @@ from sklearn.metrics import classification_report,confusion_matrix,mean_squared_
 # k_fold -> number of folds for k-fold validation
 # debug -> load debug prints; default 0
 #
-def runClassifier(x_train,x_test,y_train,y_test,c,reg=1.0,hl=3,k=5,k_fold=10,debug=0):    
+def runClassifier(x_train,x_test,y_train,y_test,c,reg=1.0,hl=3,k=5,k_fold=10,debug=0,g=0):    
     # Normalize Data
     x_train=preprocessing.normalize(x_train)
     x_test=preprocessing.normalize(x_test)
@@ -46,19 +45,9 @@ def runClassifier(x_train,x_test,y_train,y_test,c,reg=1.0,hl=3,k=5,k_fold=10,deb
         predictions = cl.predict(x_test)
         
         # Get metrics
-        cm = confusion_matrix(y_test,predictions,normalize="true")
-        cm = cm.round(decimals=4)
         print("Linear SVM:")
-        print("Confusion Matrix:")
-        print(cm)
-        print()
-        if debug == 1:
-            for ea in cm:
-                print(np.sum(ea).round(decimals=2))
-            print()
-        print("Classification Report:\n")
-        print(classification_report(y_test,predictions))
-        print("\n")        
+        getMetrics(cl,x_train,y_train,x_test,y_test,predictions,k_fold=k_fold,debug=debug,graph=g)
+        return rg      
     elif c == 1:
         # Modify MLP structure
         layer_size=[]
@@ -72,19 +61,9 @@ def runClassifier(x_train,x_test,y_train,y_test,c,reg=1.0,hl=3,k=5,k_fold=10,deb
         predictions = cl.predict(x_test)
         
         # Get metrics
-        cm = confusion_matrix(y_test,predictions,normalize="true")
-        cm = cm.round(decimals=4)
         print("Multi-Layer Perceptron Metrics ("+ str(hl) +" hidden layers):")
-        print("Confusion Matrix:")
-        print(cm)
-        print()
-        if debug == 1:
-            for ea in cm:
-                print(np.sum(ea).round(decimals=2))
-            print()
-        print("Classification Report:\n")
-        print(classification_report(y_test,predictions))
-        print("\n")
+        getMetrics(cl,x_train,y_train,x_test,y_test,predictions,k_fold=k_fold,debug=debug,graph=g)
+        return rg
     elif c == 2:
         # Train K-Nearest Neighbor Classifier
         cl = KNeighborsClassifier(n_neighbors=k)
@@ -92,38 +71,34 @@ def runClassifier(x_train,x_test,y_train,y_test,c,reg=1.0,hl=3,k=5,k_fold=10,deb
         predictions = cl.predict(x_test)
         
         # Get metrics
-        cm = confusion_matrix(y_test,predictions,normalize="true")
-        cm = cm.round(decimals=4)
         print("K-Nearest Neighbors (K = "+ str(k) +"):")
-        print("Confusion Matrix:")
-        print(cm)
-        print()
-        if debug == 1:
-            for ea in cm:
-                print(np.sum(ea).round(decimals=2))
-            print()
-        print("Classification Report:\n")
-        print(classification_report(y_test,predictions))
-        print()
-        print("Score:")
-        print(cl.score(x_test, y_test))
-        print("\n")
+        getMetrics(cl,x_train,y_train,x_test,y_test,predictions,k_fold=k_fold,debug=debug,graph=g)
+        return cl
+        
     else:
         print("ERR: Bad Classifier ID")
 
-def runRegressor(x_train,x_test,y_train,y_test,r,hl=3):
+#
+# runRegressor:
+# x/y_train/test -> Training/Testing data for x and y
+# r -> regressor_id
+# hl -> number of hidden layers; default 3
+# k -> number of nearest neighbors; default 5
+# k_fold -> number of folds for k-fold validation
+# debug -> load debug prints; default 0
+#
+def runRegressor(x_train,x_test,y_train,y_test,r,hl=3,k=5,k_fold=10,debug=0,g=0):
     if r == 0:
         # Train Linear Regression
         rg = linear_model.LinearRegression()
         rg.fit(x_train, y_train)
 
         # Make predictions
-        y_predict = rg.predict(x_test)
+        predictions = rg.predict(x_test)
         
         print("Linear Regression Metrics:")
-        print('MSE: %.3f' % mean_squared_error(y_test, y_predict))
-        print('CoD: %.3f' % r2_score(y_test, y_predict))
-        print("\n")
+        getMetrics(rg,x_train,y_train,x_test,y_test,predictions,m_id=1,k_fold=k_fold,debug=debug,graph=g)
+        return rg
     elif r == 1:
         # Modify MLP structure
         layer_size=[]
@@ -137,25 +112,77 @@ def runRegressor(x_train,x_test,y_train,y_test,r,hl=3):
 
         # Make Predictions
         predictions = rg.predict(x_test)
-        for each in predictions[0:10]:
-            print(each)
         
-        for each in y_test[0:10]:
-            print(each)
+        # Debug
+        if debug == 1:       
+            for each in predictions[0:10]:
+                print(each)
+            for each in y_test[0:10]:
+                print(each)
         
         # Get Metrics
-        print("Multi-Layered Perceptron Regressor ("+ str(hl) +" hidden layers):")
+        print("Multi-Layered Perceptron Regression ("+ str(hl) +" hidden layers) Metrics:")
+        getMetrics(rg,x_train,y_train,x_test,y_test,predictions,m_id=1,k_fold=k_fold,debug=debug,graph=g)
+        return rg
+    elif r == 2:
+        # Train K-NN Regressor
+        rg = KNeighborsRegressor(n_neighbors = k)
+        rg.fit(x_train,y_train)
+
+        # Make Predictions
+        predictions = rg.predict(x_test)
+        
+        # Get Metrics
+        print("K-Nearest Neighbor Regression ("+ str(k) +" neighbors) Metrics:")
+        getMetrics(rg,x_train,y_train,x_test,y_test,predictions,m_id=1,k_fold=k_fold,debug=debug,graph=g)
+        return rg
+    else:
+        print("ERR: Bad Regressor ID")
+
+def getMetrics(m,x_train,y_train,x_test,y_test,predictions,m_id=0,k_fold=10,debug=0,graph=0):
+    if m_id == 0:
+        print("Confusion Matrix:")
+        cm = confusion_matrix(y_test,predictions,normalize="true")
+        print(cm.round(decimals=4))
+        print()
+        if debug == 1:
+            for ea in cm:
+                print(np.sum(ea).round(decimals=2))
+            print()
         print("Classification Report:\n")
         print(classification_report(y_test,predictions))
         print()
         print("Score:")
-        print(cl.score(x_test, y_test))
+        print(m.score(x_test, y_test))
+        kf = KFold(n_splits=k_fold, random_state=1, shuffle=True)
+        scores = cross_val_score(m, x_train, y_train, scoring='neg_mean_absolute_error', cv=kf, n_jobs=-1)
+        print('K-fold (K = ' + str(k_fold) + ' folds) validation - Mean Absolute Error: %.3f' % mean(absolute(scores)))
         print("\n")
-    elif r == 2:
-        print("implement pls")
-    else:
-        print("ERR: Bad Regressor ID")
-        
+    elif m_id == 1:
+        print('MSE: %.3f' % mean_squared_error(y_test, predictions))
+        print('R2: %.3f' % r2_score(y_test, predictions))
+        kf = KFold(n_splits=k_fold, random_state=1, shuffle=True)
+        scores = cross_val_score(m, x_train, y_train, scoring='neg_mean_absolute_error', cv=kf, n_jobs=-1)
+        print('K-fold (K = ' + str(k_fold) + ' folds) validation - Mean Absolute Error: %.3f' % mean(absolute(scores)))
+        print("\n")
+
+        # DEBUG - GRAPH
+        if graph == 1:
+            i = 1
+            y_ = predictions
+            plt.subplot(2, 1, i + 1)
+            if debug == 1:
+                print(len(x_train))
+                print(len(y_train))
+            plt.scatter(x_train[:,0], y_train, color='darkorange', label='data')
+            plt.plot(x_test, y_, color='navy', label='prediction')
+            plt.axis('tight')
+            plt.legend()
+
+            plt.tight_layout()
+            plt.show()
+    
+
 
 def main():
     # Load data
@@ -168,26 +195,39 @@ def main():
     y_single = np.hstack(single[:,9:])
 
     # Split train/test
-    x_train, x_test, y_train, y_test = train_test_split(x_single, y_single)
+    x_train, x_test, y_train, y_test = train_test_split(x_single, y_single, test_size=0.2)
 
-    runRegressor(x_train, x_test, y_train, y_test, 1)
+    # Run Single Linear Regression
+    print(" ~~~~~~~ Running Linear Regression ~~~~~~~")
+    runRegressor(x_train, x_test, y_train, y_test, 0)
+    
+    # Run Single MLP Regression
+    print(" ~~~~~~~ Running MLP Regression ~~~~~~~")
+    for i in range(1,6):
+        #print()
+        runRegressor(x_train, x_test, y_train, y_test, 1, hl=i)
+    
+    # Run Single K-NN Regression
+    print(" ~~~~~~~ Running K-NN Regression ~~~~~~~")
+    for i in range(1,10):
+        #print()
+        runRegressor(x_train, x_test, y_train, y_test, 2, k=i)
 
-    # Single LR
+    # Single LinearSVM
+    print("~~~~~~~ Running LinearSVM Classifier ~~~~~~~")
     runClassifier(x_train, x_test, y_train, y_test, 0)
 
     # Single MLP
-    runClassifier(x_train, x_test, y_train, y_test, 1, hl=1)
-    runClassifier(x_train, x_test, y_train, y_test, 1, hl=2)
-    runClassifier(x_train, x_test, y_train, y_test, 1)
-    runClassifier(x_train, x_test, y_train, y_test, 1, hl=4)
-    runClassifier(x_train, x_test, y_train, y_test, 1, hl=5)
+    print("~~~~~~~ Running MLP Classifier ~~~~~~~")
+    for i in range(1,6):
+        # print()
+        runClassifier(x_train, x_test, y_train, y_test, 1, hl=i)
 
     # Single 
-    runClassifier(x_train, x_test, y_train, y_test, 2, k=4)
-    runClassifier(x_train, x_test, y_train, y_test, 2)
-    runClassifier(x_train, x_test, y_train, y_test, 2, k=6)
-    runClassifier(x_train, x_test, y_train, y_test, 2, k=7)
-    runClassifier(x_train, x_test, y_train, y_test, 2, k=8)
+    print("~~~~~~~ Running K-NN Classifier ~~~~~~~")
+    for i in range(1,10):
+        # print()
+        runClassifier(x_train, x_test, y_train, y_test, 2, k=i)
 
 main()
 
