@@ -1,7 +1,6 @@
 import numpy as np
 from numpy import mean
 from numpy import absolute
-import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn import linear_model
 from sklearn.svm import SVC
@@ -12,10 +11,6 @@ from sklearn import preprocessing
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, mean_squared_error, r2_score
 
-# TODO:
-# - Perform tests for Multi & Final datasets
-# - Implement Extra Credit?
-# - Finish video
 
 #
 # runClassifier:
@@ -29,7 +24,7 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 #
 
 
-def runClassifier(x_train, x_test, y_train, y_test, c, reg=1.0, hl=3, k=5, k_fold=10, debug=0, g=0):
+def runClassifier(x_train, x_test, y_train, y_test, c, reg=1.0, hl=3, k=5, k_fold=10, debug=0, g=0, p=0):
     # Normalize Data
     x_train = preprocessing.normalize(x_train)
     x_test = preprocessing.normalize(x_test)
@@ -46,9 +41,10 @@ def runClassifier(x_train, x_test, y_train, y_test, c, reg=1.0, hl=3, k=5, k_fol
         predictions = cl.predict(x_test)
 
         # Get metrics
-        print("Linear SVM:")
-        getMetrics(cl, x_train, y_train, x_test, y_test,
-                   predictions, k_fold=k_fold, debug=debug, graph=g)
+        if p == 1:
+            print("Linear SVM:")
+            getMetrics(cl, x_train, y_train, x_test, y_test,
+                       predictions, k_fold=k_fold, debug=debug, graph=g)
         return cl
     elif c == 1:
         # Modify MLP structure
@@ -63,9 +59,10 @@ def runClassifier(x_train, x_test, y_train, y_test, c, reg=1.0, hl=3, k=5, k_fol
         predictions = cl.predict(x_test)
 
         # Get metrics
-        print("Multi-Layer Perceptron Metrics (" + str(hl) + " hidden layers):")
-        getMetrics(cl, x_train, y_train, x_test, y_test,
-                   predictions, k_fold=k_fold, debug=debug, graph=g)
+        if p == 1:
+            print("Multi-Layer Perceptron Metrics (" + str(hl) + " hidden layers):")
+            getMetrics(cl, x_train, y_train, x_test, y_test,
+                       predictions, k_fold=k_fold, debug=debug, graph=g)
         return cl
     elif c == 2:
         # Train K-Nearest Neighbor Classifier
@@ -74,13 +71,15 @@ def runClassifier(x_train, x_test, y_train, y_test, c, reg=1.0, hl=3, k=5, k_fol
         predictions = cl.predict(x_test)
 
         # Get metrics
-        print("K-Nearest Neighbors (K = " + str(k) + "):")
-        getMetrics(cl, x_train, y_train, x_test, y_test,
-                   predictions, k_fold=k_fold, debug=debug, graph=g)
+        if p == 1:
+            print("K-Nearest Neighbors (K = " + str(k) + "):")
+            getMetrics(cl, x_train, y_train, x_test, y_test,
+                       predictions, k_fold=k_fold, debug=debug, graph=g)
         return cl
 
     else:
         print("ERR: Bad Classifier ID")
+
 
 #
 # runRegressor:
@@ -91,21 +90,31 @@ def runClassifier(x_train, x_test, y_train, y_test, c, reg=1.0, hl=3, k=5, k_fol
 # k_fold -> number of folds for k-fold validation
 # debug -> load debug prints; default 0
 #
-
-
-def runRegressor(x_train, x_test, y_train, y_test, r, hl=3, k=5, k_fold=10, debug=0, g=0):
+def runRegressor(x_train, x_test, y_train, y_test, r, hl=3, k=5, k_fold=10, debug=0, g=0, p=0):
     if r == 0:
         # Train Linear Regression
         rg = linear_model.LinearRegression()
         rg.fit(x_train, y_train)
 
-        # Make predictions
-        predictions = rg.predict(x_test)
-        #predictions = np.rint(predictions)
+        x_train = np.c_[np.ones(len(x_train)), x_train]
+        x_test = np.c_[np.ones(len(x_test)), x_test]
 
-        print("Linear Regression Metrics:")
-        getMetrics(rg, x_train, y_train, x_test, y_test, predictions,
-                   m_id=1, k_fold=k_fold, debug=debug, graph=g)
+        x_train = np.array(x_train)
+        xt = np.transpose(x_train)
+        xtx = np.dot(xt, x_train)
+        xty = np.dot(xt, y_train)
+        b_prime = np.linalg.solve(xtx, xty)
+
+        # Make predictions
+        predictions = np.dot(x_test, b_prime)
+
+        # predictions = rg.predict(x_test)
+        # predictions = np.rint(predictions)
+
+        if p == 1:
+            print("Linear Regression Metrics:")
+            getMetrics(rg, x_train, y_train, x_test, y_test, predictions,
+                       m_id=1, k_fold=k_fold, debug=debug, graph=g)
         return rg
     elif r == 1:
         # Modify MLP structure
@@ -129,10 +138,11 @@ def runRegressor(x_train, x_test, y_train, y_test, r, hl=3, k=5, k_fold=10, debu
                 print(each)
 
         # Get Metrics
-        print("Multi-Layered Perceptron Regression (" +
-              str(hl) + " hidden layers) Metrics:")
-        getMetrics(rg, x_train, y_train, x_test, y_test, predictions,
-                   m_id=1, k_fold=k_fold, debug=debug, graph=g)
+        if p == 1:
+            print("Multi-Layered Perceptron Regression (" +
+                  str(hl) + " hidden layers) Metrics:")
+            getMetrics(rg, x_train, y_train, x_test, y_test, predictions,
+                       m_id=1, k_fold=k_fold, debug=debug, graph=g)
         return rg
     elif r == 2:
         # Train K-NN Regressor
@@ -143,9 +153,10 @@ def runRegressor(x_train, x_test, y_train, y_test, r, hl=3, k=5, k_fold=10, debu
         predictions = rg.predict(x_test)
 
         # Get Metrics
-        print("K-Nearest Neighbor Regression (" + str(k) + " neighbors) Metrics:")
-        getMetrics(rg, x_train, y_train, x_test, y_test, predictions,
-                   m_id=1, k_fold=k_fold, debug=debug, graph=g)
+        if p == 1:
+            print("K-Nearest Neighbor Regression (" + str(k) + " neighbors) Metrics:")
+            getMetrics(rg, x_train, y_train, x_test, y_test, predictions,
+                       m_id=1, k_fold=k_fold, debug=debug, graph=g)
         return rg
     else:
         print("ERR: Bad Regressor ID")
@@ -182,22 +193,25 @@ def getMetrics(m, x_train, y_train, x_test, y_test, predictions, m_id=0, k_fold=
               ' folds) validation - Mean Absolute Error: %.3f' % mean(absolute(scores)))
         print("\n")
 
-        # DEBUG - GRAPH
-        if graph == 1:
-            i = 1
-            y_ = predictions
-            plt.subplot(2, 1, i + 1)
-            if debug == 1:
-                print(len(x_train))
-                print(len(y_train))
-            plt.scatter(x_train[:, 0], y_train,
-                        color='darkorange', label='data')
-            plt.plot(x_test, y_, color='navy', label='prediction')
-            plt.axis('tight')
-            plt.legend()
 
-            plt.tight_layout()
-            plt.show()
+def normalizeInputs(x_train, x_test):
+    x_train = (x_train - np.min(x_train)) / (np.max(x_train) - np.min(x_train))
+    x_test = (x_test - np.min(x_test)) / (np.max(x_test) - np.min(x_test))
+    return x_train, x_test
+
+
+def getAccuracy(y_test, predictions):
+    n_total = len(y_test)
+    n_match = 0
+    if n_total == len(predictions):
+        for i in range(n_total):
+            if len(predictions[i]) == 1:
+                if predictions[i].round() == y_test[i]:
+                    n_match += 1
+            else:
+                if (predictions[i].round() == y_test[i]).all():
+                    n_match += 1
+    return n_match / n_total
 
 
 def main():
@@ -227,6 +241,10 @@ def main():
         x_final, y_final, test_size=0.2, random_state=rng)
     x_train_multi, x_test_multi, y_train_multi, y_test_multi = train_test_split(
         x_multi, y_multi, test_size=0.2, random_state=rng)
+
+    x_train_final, x_test_final = normalizeInputs(x_train_final, x_test_final)
+    x_train_single, x_test_single = normalizeInputs(x_train_single, x_test_single)
+    x_train_multi, x_test_multi = normalizeInputs(x_train_multi, x_test_multi)
 
     # -- REGRESSORS --
     # Run Single Linear Regression
