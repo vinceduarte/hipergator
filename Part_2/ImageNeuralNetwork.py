@@ -1,6 +1,9 @@
 import cv2
 import os
 import glob
+import numpy as np
+import tensorflow as tf
+import math
 
 # Load Data from Directory
 img_dir = "directory"
@@ -21,13 +24,13 @@ for f in files:
 #   - A combination of the above three
 #
 aug_data = []
-for img in data
+# for img in data:
     
 
 # Convert data to L*a*b* color space (Luminance+Chrominance Space)
 dataLAB=[]
 for img in aug_data:
-    imgLAB = cv2.cvtColor(image,cv2.COLOR_BGR2LAB)
+    imgLAB = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
 
 
 # Batch Normalization
