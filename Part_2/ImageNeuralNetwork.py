@@ -1,18 +1,18 @@
 import cv2
+from zipfile import ZipFile as zf
 import os
 import glob
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
 import math
 
 # Load Data from Directory
-img_dir = "directory"
+img_dir = "face_images/*.jpg"
 files = glob.glob(img_dir)
 data = []
 for f in files:
     img = cv2.imread(f)
     data.append(img)
-
 
 # Augment dataset
 #
@@ -25,13 +25,16 @@ for f in files:
 #
 aug_data = []
 # for img in data:
-    
+
 
 # Convert data to L*a*b* color space (Luminance+Chrominance Space)
-dataLAB=[]
-for img in aug_data:
+dataLAB = []
+i = 0
+for img in data:
     imgLAB = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    dataLAB.append(imgLAB)
 
+print(dataLAB[0:10])
 
 # Batch Normalization
 #
@@ -45,6 +48,16 @@ for img in aug_data:
 # Input: The L* channel (grayscale)
 # Output: Mean chrominance
 
+# SET THESE
+batch_size = 1
+epoch = 1
+
+# Forward
+# Compute Loss
+# Backward
+# Update Weights
+# Testing
+
 
 # Colorize Image
 
@@ -57,4 +70,3 @@ for img in aug_data:
 # EC: CHange no. of feature maps for interior NNs
 
 # EC: Review Paper
-
