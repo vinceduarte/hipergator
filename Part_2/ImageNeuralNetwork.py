@@ -4,8 +4,8 @@ import glob
 import numpy as np
 import tensorflow as tf
 import torch as t
-import torch.nn as n
-import torch.nn.functional as f
+import torch.nn as nn
+import torch.nn.functional as Fn
 import math
 import random as rd
 
@@ -19,6 +19,8 @@ data = []
 for f in files:
     img = cv2.imread(f)
     data.append(img)
+
+
 # data = tf.convert_to_tensor(data)
 
 
@@ -39,7 +41,7 @@ def aug_scale_rgb(image):
         for p_j in range(len(image)):
             for c in range(3):
                 # Scale the BGR by a random amount
-                image[p_i][p_j][c] = int(image[p_i][p_j][c]*random_scale)
+                image[p_i][p_j][c] = int(image[p_i][p_j][c] * random_scale)
     return image
 
 
@@ -51,8 +53,8 @@ def aug_crop(image):
     w = random_val
     h = random_val
     crop = image[y_init:y_init + h, x_init:x_init + w]
-    resize_w = int(len(crop[0])*(128/w))
-    resize_h = int(len(crop)*(128/h))
+    resize_w = int(len(crop[0]) * (128 / w))
+    resize_h = int(len(crop) * (128 / h))
     resize_scale = (resize_w, resize_h)
     return cv2.resize(crop, resize_scale, interpolation=cv2.INTER_AREA)
 
@@ -74,7 +76,7 @@ for img in data:
     flipped = aug_flip(img)
     bgr = aug_scale_rgb(img)
     # for i in range(1, scale):
-        # curr += 1
+    # curr += 1
 
 # Convert data to L*a*b* color space (Luminance+Chrominance Space)
 dataLAB = []
@@ -98,9 +100,39 @@ print(dataLAB[0])
 # Input: The L* channel (grayscale)
 # Output: Mean chrominance
 
+
 # SET THESE
 batch_size = 1
 epoch = 1
+
+
+# TODO: WTH IS THIS.?
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.conv1 = nn.Conv2d(1, 128, 3, 1)
+        self.conv2 = nn.Conv2d(128, 64, 3, 1)
+        self.conv3 = nn.Conv2d(64, 32, 3, 1)
+        self.conv4 = nn.Conv2d(32, 16, 3, 1)
+        self.conv5 = nn.Conv2d(16, 8, 3, 1)
+        self.conv6 = nn.Conv2d(8, 4, 3, 1)
+        self.conv7 = nn.Conv2d(4, 2, 3, 1)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = Fn.relu(x)
+        x = self.conv2(x)
+        x = Fn.relu(x)
+        x = self.conv3(x)
+        x = Fn.relu(x)
+        x = self.conv4(x)
+        x = Fn.relu(x)
+        x = self.conv5(x)
+        x = Fn.relu(x)
+        x = self.conv6(x)
+        x = Fn.relu(x)
+        x = self.conv7(x)
+        x = Fn.relu(x)
 
 # Forward
 # Compute Loss
