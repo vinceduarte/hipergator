@@ -1,11 +1,17 @@
 import cv2
-from zipfile import ZipFile as zf
 import os
 import glob
 import numpy as np
-# import tensorflow as tf
+import tensorflow as tf
+import torch as t
+import torch.nn as n
+import torch.nn.functional as f
 import math
+import random as rd
 
+# TODO: HOW MAKE TENSOR
+# TODO: HOW MAKE CNN
+# TODO: HOW FILL TENSOR
 # Load Data from Directory
 img_dir = "face_images/*.jpg"
 files = glob.glob(img_dir)
@@ -13,6 +19,8 @@ data = []
 for f in files:
     img = cv2.imread(f)
     data.append(img)
+# data = tf.convert_to_tensor(data)
+
 
 # Augment dataset
 #
@@ -23,18 +31,60 @@ for f in files:
 #   - Scaling the R, G, and B channels by a value between [0.6 and 1.0]
 #   - A combination of the above three
 #
-aug_data = []
-# for img in data:
 
+# Scale Image BGR by between 0.6 and 1.0
+def aug_scale_rgb(image):
+    random_scale = rd.uniform(0.6, 1.0)
+    for p_i in range(len(image[0])):
+        for p_j in range(len(image)):
+            for c in range(3):
+                # Scale the BGR by a random amount
+                image[p_i][p_j][c] = int(image[p_i][p_j][c]*random_scale)
+    return image
+
+
+# Crop Image and resize
+def aug_crop(image):
+    x_init = rd.randint(0, 64)
+    y_init = rd.randint(0, 64)
+    random_val = rd.randint(64, 128 - x_init)
+    w = random_val
+    h = random_val
+    crop = image[y_init:y_init + h, x_init:x_init + w]
+    resize_w = int(len(crop[0])*(128/w))
+    resize_h = int(len(crop)*(128/h))
+    resize_scale = (resize_w, resize_h)
+    return cv2.resize(crop, resize_scale, interpolation=cv2.INTER_AREA)
+
+
+# Flip image horizontally
+def aug_flip(image):
+    return cv2.flip(image, 1)
+
+
+scale = 10
+# aug_data = tf.fill([len(data) * scale, 128, 128, 3], 0)
+curr = 0
+# For each image in data
+for img in data:
+    # Do this n times for each image
+    cv2.imshow("original", img)
+    cv2.waitKey(0)
+    resized = aug_crop(img)
+    flipped = aug_flip(img)
+    bgr = aug_scale_rgb(img)
+    # for i in range(1, scale):
+        # curr += 1
 
 # Convert data to L*a*b* color space (Luminance+Chrominance Space)
 dataLAB = []
 i = 0
+# TODO: change "data" to "aug_data
 for img in data:
     imgLAB = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     dataLAB.append(imgLAB)
 
-print(dataLAB[0:10])
+print(dataLAB[0])
 
 # Batch Normalization
 #
@@ -67,6 +117,9 @@ epoch = 1
 
 # EC: TANH
 
-# EC: CHange no. of feature maps for interior NNs
+# EC: Change no. of feature maps for interior NNs
 
 # EC: Review Paper
+
+# https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html
+# https://pytorch.org/tutorials/recipes/recipes/defining_a_neural_network.html
